@@ -1,5 +1,11 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import {
+  recordStatus,
+  recordError,
+  hostOf,
+  shouldLogError,
+} from "./stats.js";
 
 dotenv.config();
 
@@ -11,6 +17,17 @@ export default async function proxyM3U8(url, headers, res) {
   const req = await axios(url, {
     headers: headers,
   }).catch((err) => {
+    const host = hostOf(url);
+    recordError("/m3u8-proxy", err, host);
+    if (shouldLogError()) {
+      console.error(
+        "m3u8-proxy error:",
+        err?.code || "NO_CODE",
+        host,
+        err?.response?.status ?? "-",
+        err?.message || err
+      );
+    }
     res.writeHead(500);
     res.end(err.message);
     return null;
@@ -18,6 +35,7 @@ export default async function proxyM3U8(url, headers, res) {
   if (!req) {
     return;
   }
+  recordStatus("/m3u8-proxy", req.status ?? 200);
   const m3u8 = req.data
     .split("\n")
     //now it supports also proxying multi-audio streams

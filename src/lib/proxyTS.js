@@ -1,5 +1,6 @@
 import https from "node:https";
 import http from "node:http";
+import { recordStatus, recordError, shouldLogError } from "./stats.js";
 
 export async function proxyTs(url, headers, req, res) {
   let forceHTTPS = false;
@@ -31,7 +32,18 @@ export async function proxyTs(url, headers, req, res) {
   const handleError = (err) => {
     if (settled) return;
     settled = true;
-    console.error("ts-proxy error:", err?.message || err);
+    // Counters ALWAYS run, even when the detail line is suppressed, so the
+    // failure rate stays accurate during a flood. Only the stdout line is
+    // rate-capped — /ts-proxy is the ~240-request-per-episode segment path.
+    recordError("/ts-proxy", err, uri.hostname);
+    if (shouldLogError()) {
+      console.error(
+        "ts-proxy error:",
+        err?.code || "NO_CODE",
+        uri.hostname,
+        err?.message || err
+      );
+    }
     if (!res.headersSent) {
       res.writeHead(502, { "Access-Control-Allow-Origin": "*" });
       res.end("Upstream error: " + (err?.message || "request failed"));
@@ -44,6 +56,7 @@ export async function proxyTs(url, headers, req, res) {
     if (forceHTTPS) {
       const proxy = https.request(options, (r) => {
         r.headers["content-type"] = "video/mp2t";
+        recordStatus("/ts-proxy", r.statusCode ?? 200);
         res.writeHead(r.statusCode ?? 200, r.headers);
 
         r.on("error", handleError);
@@ -60,6 +73,7 @@ export async function proxyTs(url, headers, req, res) {
     } else {
       const proxy = http.request(options, (r) => {
         r.headers["content-type"] = "video/mp2t";
+        recordStatus("/ts-proxy", r.statusCode ?? 200);
         res.writeHead(r.statusCode ?? 200, r.headers);
 
         r.on("error", handleError);
