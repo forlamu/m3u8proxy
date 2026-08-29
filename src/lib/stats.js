@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import errorDetail from "./errorDetail.js";
 
 dotenv.config();
 
@@ -214,7 +215,7 @@ function flush() {
       )}${fmtHosts()}${suppressed}`
     );
   } catch (e) {
-    console.error("[stats] flush failed:", e?.message || e);
+    console.error("[stats] flush failed:", errorDetail(e));
   } finally {
     routes = {
       "/m3u8-proxy": blankRoute(),

@@ -6,6 +6,7 @@ import {
   hostOf,
   shouldLogError,
 } from "./stats.js";
+import errorDetail from "./errorDetail.js";
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ export default async function proxyM3U8(url, headers, res) {
         err?.code || "NO_CODE",
         host,
         err?.response?.status ?? "-",
-        err?.message || err
+        errorDetail(err)
       );
     }
     res.writeHead(500);

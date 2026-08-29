@@ -1,4 +1,5 @@
 import getHandler from "./getHandler.js";
+import errorDetail from "./errorDetail.js";
 import httpProxy from "http-proxy";
 import http from "node:http";
 
@@ -88,7 +89,7 @@ export default function createServer(options) {
   }
 
   proxyServer.on("error", function (err, req, res) {
-    console.error("Proxy error:", err);
+    console.error("Proxy error:", errorDetail(err));
     if (res.headersSent) {
       if (!res.writableEnded) {
         res.end();

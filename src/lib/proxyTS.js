@@ -1,6 +1,7 @@
 import https from "node:https";
 import http from "node:http";
 import { recordStatus, recordError, shouldLogError } from "./stats.js";
+import errorDetail from "./errorDetail.js";
 
 export async function proxyTs(url, headers, req, res) {
   let forceHTTPS = false;
@@ -41,7 +42,7 @@ export async function proxyTs(url, headers, req, res) {
         "ts-proxy error:",
         err?.code || "NO_CODE",
         uri.hostname,
-        err?.message || err
+        errorDetail(err)
       );
     }
     if (!res.headersSent) {
